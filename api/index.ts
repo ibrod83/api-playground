@@ -11,5 +11,15 @@ app.use(express.json());
 // Use API routes
 app.use(createApiRoutes(conversationService));
 
-// Export the Express app as a Vercel serverless function
-export default app; 
+// Export for local server
+export default app;
+
+// Export for Vercel
+export const config = {
+  api: {
+    bodyParser: false, // Disable the built-in body parser as we're using express.json()
+  },
+};
+
+// Handle Vercel serverless function format
+module.exports = app; 
