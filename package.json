@@ -1,14 +1,13 @@
 {
   "name": "api-playground",
   "version": "1.0.0",
-  "private": true,
+  "main": "index.ts",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "dev:vercel": "vercel dev",
-    "start": "tsx server.ts",
+    "dev": "tsx index.ts",
+    "start": "tsx index.ts",
     "build": "tsc",
-    "deploy": "vercel deploy"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
@@ -24,7 +23,6 @@
     "@types/node": "^20.10.5",
     "@types/uuid": "^9.0.7",
     "tsx": "^4.6.2",
-    "typescript": "^5.3.3",
-    "vercel": "^32.7.2"
+    "typescript": "^5.3.3"
   }
 }
