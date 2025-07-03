@@ -1,0 +1,78 @@
+import 'dotenv/config';
+import OpenAI from "openai";
+import fs from "fs";
+
+const client = new OpenAI();
+
+async function testStatefulConversation(): Promise<void> {
+    try {
+        const instructions: string = `
+        You are a personal math tutor. When asked a math question, 
+        write and run code using the python tool to answer the question.
+        `;
+
+        const resp = await client.responses.create({
+            model: "gpt-4.1",
+            tools: [
+                {
+                    type: "code_interpreter",
+                    container: { type: "auto" },
+                },
+            ],
+            instructions,
+            input: "create a CSV file with the following data: name,age,city. The file should be named 'data.csv'. Fill it with sample data of cities in usa and europe ",
+        });
+
+        console.log(resp.output_text);
+     
+
+        // Find container_id from code_interpreter_call
+        const codeInterpreterCall = resp.output.find(item => item.type === "code_interpreter_call");
+        const containerId = (codeInterpreterCall as any)?.container_id;
+
+        // Find file_id from annotations
+        const messageOutput = resp.output.find(item => item.type === "message");
+        const content = (messageOutput as any)?.content;
+        const annotation = content?.[0]?.annotations?.[0];
+        const fileId = annotation?.file_id;
+
+        if (containerId && fileId) {
+            console.log(`\nDownloading file: ${annotation?.filename || 'file'}`);
+            
+            try {
+                // Use direct API call - the client method may not exist yet
+                const response = await fetch(`https://api.openai.com/v1/containers/${containerId}/files/${fileId}/content`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.OPENAI_API_KEY as string}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const fileContent: string = await response.text();
+                    const filename: string = annotation?.filename || 'downloaded_file.csv';
+                    
+                    // Save to project root directory
+                    fs.writeFileSync(filename, fileContent);
+                    console.log(`✅ File saved as: ${filename}`);
+                } else {
+                    console.error(`❌ Failed to download file: ${response.status} ${response.statusText}`);
+                }
+                
+            } catch (downloadError) {
+                const error = downloadError as Error;
+                console.error(`❌ Error downloading file: ${error.message}`);
+            }
+        } else {
+            console.log("\nCould not extract container_id or file_id from response");
+        }
+
+    } catch (error) {
+        const err = error as Error;
+        console.error("Error:", err.message);
+    }
+}
+
+testStatefulConversation();
+
+// https://api.openai.com/v1/containers/{container_id}/files/{file_id}/content 
